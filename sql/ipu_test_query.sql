@@ -31,9 +31,10 @@ FROM
   --   END as [age_group] 
   , DATEDIFF(Y
             , CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-            CONVERT(DATE, CONVERT(NVARCHAR(4),DATepart(YY, ip.disdate))+ '-01-01')
+            , CONVERT(DATE, CONVERT(NVARCHAR(4),DATepart(YY, ip.disdate))+ '-01-01')
             --, CONVERT(DATE, '2015' + '-01-01') -- FIX: episodes could fall in one of two years. 
             ) / 365 as [age_jan1]
+  , startage
   , CASE ip.sex
       WHEN '1' THEN '1'
       WHEN '2' THEN '2'
