@@ -21,7 +21,7 @@ FROM (
   SELECT TOP 100000
     -- Datepart(YEAR, ip.disdate) as [year]
   CASE 
-	  WHEN disdate = '1800-01-01'
+	  WHEN disdate = '1801-01-01'
 	  THEN Datepart(YEAR, ip.epiend)
 	  ELSE ISNULL(Datepart(YEAR, ip.disdate), Datepart(YEAR, ip.epiend)) 
 	  END [year]
@@ -31,7 +31,7 @@ FROM (
   	--THEN Datepart(YEAR, ip.disdate) as [year]
     --, Datepart(YEAR, ip.admidate) as [year_admi]
   ,CASE 
-	WHEN disdate = '1800-01-01'
+	WHEN disdate = '1801-01-01'
 	THEN Datepart(MONTH, ip.epiend)
 	ELSE ISNULL(Datepart(MONTH,ip.disdate), Datepart(MONTH, ip.epiend))
 	END [month]
@@ -39,7 +39,7 @@ FROM (
   ,ip.encrypted_hesid
    
     ,CASE 
-	   WHEN disdate = '1800-01-01'
+	   WHEN disdate = '1801-01-01'
 	   THEN DATEDIFF(Y
                     ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
                     ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
