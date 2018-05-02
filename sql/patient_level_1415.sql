@@ -46,7 +46,7 @@ FROM (
     --          , CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.disdate))+ '-01-01')
     --          --, CONVERT(DATE, '2015' + '-01-01') -- FIX: episodes could fall in one of two years. 
     --          ) / 365 as [age_jan1]
-    ,ip.startage
+    --,ip.startage
 	,ip.sex as [gender]    
     ,ip.admidate
 	,ip.epiend
@@ -62,8 +62,8 @@ FROM (
     ,cause_of_death
     ,LEFT(cause_of_death, 1) as [cod_1]
     , CASE
-        WHEN d.Encrypted_HESid IS NULL 
-        THEN NULL
+        WHEN d.Encrypted_HESid IS NULL
+        THEN NULL -- SET NULLS FOR THOSE WITHOUT DEATH RECORD 
         WHEN DATEDIFF(dd, ip.admidate, d.DOD) between 0 and 40000 
         THEN CAST(
           FLOOR(
@@ -93,7 +93,7 @@ FROM (
     
     FROM [ONS].[HESONS].[tbMortalityto1516] a
     --WHERE DOD between '20", str_sub(years[i], 1, 2), "-04-01' AND '20", year_plus_one , "-03-31'
-    WHERE DOD between '2015-04-01' AND '2016-03-31'
+    WHERE DOD between '2014-04-01' AND '2016-03-31'
     AND SUBSEQUENT_ACTIVITY_FLG IS NULL -- Ignore deaths with subseq activity.
     ) d
     ON ip.Encrypted_HESID = d.Encrypted_HESID
