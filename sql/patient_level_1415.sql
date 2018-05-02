@@ -20,26 +20,40 @@ FROM (
   
   SELECT TOP 100000
     -- Datepart(YEAR, ip.disdate) as [year]
-    ISNULL(Datepart(YEAR, ip.disdate), Datepart(YEAR, ip.epiend)) [year]
+  CASE 
+	  WHEN disdate = '1800-01-01'
+	  THEN Datepart(YEAR, ip.epiend)
+	  ELSE ISNULL(Datepart(YEAR, ip.disdate), Datepart(YEAR, ip.epiend)) 
+	  END [year]
 	
    -- CASE 
    --   WHEN Datepart(YEAR, ip.disdate) as [year] IS NOT NULL
   	--THEN Datepart(YEAR, ip.disdate) as [year]
     --, Datepart(YEAR, ip.admidate) as [year_admi]
-  
-    ,ISNULL(Datepart(MONTH,ip.disdate), Datepart(MONTH, ip.epiend)) [month]
+  ,CASE 
+	WHEN disdate = '1800-01-01'
+	THEN Datepart(MONTH, ip.epiend)
+	ELSE ISNULL(Datepart(MONTH,ip.disdate), Datepart(MONTH, ip.epiend))
+	END [month]
     --, Datepart(MONTH,ip.disdate) as [month] 
-    , ip.encrypted_hesid
+  ,ip.encrypted_hesid
    
-    ,ISNULL((DATEDIFF(Y
+    ,CASE 
+	   WHEN disdate = '1800-01-01'
+	   THEN DATEDIFF(Y
                     ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                    ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.disdate))+ '-01-01')
-                     ) / 365)
-					 , (DATEDIFF(Y
-                    ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                    ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.epiend))+ '-01-01')
-                     ) / 365)
-					 ) as [age_jan1]
+                    ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
+                     ) / 365
+	   ELSE ISNULL((DATEDIFF(Y
+                             ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.disdate))+ '-01-01')
+                             ) / 365)
+				   ,(DATEDIFF(Y
+                             ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.epiend))+ '-01-01')
+                              ) / 365)
+					 ) 
+					 END [age_jan1]
 	-- from hesdata.dbo.tbinpatients1516 ip
     --,DATEDIFF(Y
     --          , CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
