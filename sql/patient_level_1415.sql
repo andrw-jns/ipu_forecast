@@ -4,53 +4,159 @@
 -- It may be sensible, if looking especially at the trends in last 12 months of life,
 -- to exclude activity for a year before latest recorded deaths.
 
-SELECT * 
- ,CASE
-    WHEN cte.prox_to_death IS NULL
-	THEN ISNULL(DATEDIFF(MM
-	                      ,cte.disdate
-						  ,CONVERT(DATE, '2016-04-01'))
-			    ,DATEDIFF(MM
-	                      ,cte.epiend
-						  ,CONVERT(DATE, '2016-04-01'))
-				)
+-- THE MONTH AND YEAR VARIABLES ARE FORMED BASED ON THESE RULES:
+-- USE THE DISDATE 
+-- IF NO RELIABLE DISDATE USE EPIEND
+-- IF NO RELIABLE EPIEND USE EPISTART
+-- MONTH, YEAR REFERENCED FOR AGE_JAN1, PROX_TO_DEATH, AND LOWER BOUND 
 
-	ELSE cte.prox_to_death
-  END [lower_bound] -- DiFFERENCE BETWEEN ADMISSION AND END OF DEATHS DATA
+SELECT 
+   cte3.[year]
+  ,cte3.[year_adjust]
+  ,cte3.[date]
+  ,cte3.[encrypted_hesid]
+  ,cte3.[age_jan1]
+  ,cte3.[gender]
+  ,cte3.[disdate]
+  ,cte3.[dod]
+  ,cte3.[lsoa01]
+  ,cte3.[beddays]
+  ,cte3.[cause_of_death]
+  ,cte3.[cod1]
+  ,cte3.[lower_bound]
+  ,cte3.[prox_to_death]
+  ,DATEDIFF(MM
+    ,CONVERT(DATE, CONVERT(NVARCHAR(4),cte3.year_adjust) + '-' + CONVERT(NVARCHAR(2), cte3.month_adjust) +'-01')
+	,cte3.dod
+	) [prox_test]
+  
+
+
+FROM (
+SELECT * 
+,CASE
+  WHEN cte2.month < 12 AND cte2.boolean = 1
+  THEN cte2.month +1
+  WHEN cte2.month = 12 AND cte2.boolean = 1
+  THEN 1
+  ELSE cte2.month
+  END [month_adjust]
+ 
+  ,CASE
+  WHEN cte2.month = 12 AND cte2.boolean = 1
+  THEN year +1
+  ELSE cte2.year
+  END [year_adjust]
+
+FROM(
+
+SELECT * 
+ --,CASE
+ --   WHEN cte.prox_to_death IS NULL
+	--THEN ISNULL(DATEDIFF(MM
+	--                      ,cte.disdate
+	--					  ,CONVERT(DATE, '2016-04-01'))
+	--		    ,ISNULL((DATEDIFF(MM
+	--                      ,cte.epiend
+	--					  ,CONVERT(DATE, '2016-04-01')))
+	--					,(DATEDIFF(MM
+	--                      ,cte.epistart
+	--					  ,CONVERT(DATE, '2016-04-01')))
+	--					  )
+	--			)
+	-- ELSE cte.prox_to_death
+ -- END [lower_bound] -- DiFFERENCE BETWEEN ADMISSION AND END OF DEATHS DATA
+
+  ,DATEDIFF(MM
+    ,CONVERT(DATE, CONVERT(NVARCHAR(4),cte.year) + '-' + CONVERT(NVARCHAR(2), cte.month) +'-01')
+	,cte.dod
+	) [prox_2]
+
+  --,CASE
+  --  WHEN cte.month < 12 AND DATEPART(dd, date) >
+  --, CONVERT(BOOLEAN, 1 > 2)
+  --,DATEPART(dd, cte.date) > DATEPART(dd, cte.dod))
+  
+  ,CASE 
+    WHEN DATEPART(dd, cte.date) > DATEPART(dd, cte.dod)
+	THEN 1
+	ELSE 0
+	END [boolean]
+
+  ,ISNULL(cte.prox_to_death,
+		  DATEDIFF(MM
+            ,CONVERT(DATE, CONVERT(NVARCHAR(4),cte.year) + '-' + CONVERT(NVARCHAR(2), cte.month) +'-01') 
+            ,CONVERT(DATE, '2016-04-01')
+             ) 
+			 ) [lower_bound] -- DiFFERENCE BETWEEN ADMISSION AND END OF DEATHS DATA
+
+
+
+			 --, CASE
+    --    --WHEN d.Encrypted_HESid IS NULL
+    --    --THEN NULL -- SET AS NULL FOR THOSE WITHOUT DEATH RECORD 
+    --    WHEN DATEDIFF(MM, ip.admidate, d.DOD) between 0 and 40000  
+    --    THEN CAST(
+    --      FLOOR(
+    --        DATEDIFF(dd, ip.admidate, d.DOD)/30.42 -- average days in a month
+    --                ) AS INT
+    --           )
+    --    WHEN DATEDIFF(dd, ip.admidate, d.DOD) < 0
+    --    THEN 999999 -- Error code will be 999999
+    --    ELSE 999999 
+    --END [prox_to_death]
+  
+ 
+
 
 FROM (
   
-  SELECT TOP 100000
+  SELECT --TOP 10000
   
   CASE 
 	  WHEN disdate = '1801-01-01'
-	  THEN ISNULL(Datepart(YEAR, ip.epiend), DATEPART(YEAR, ip.epistart))
-	  -- THIS NEEDS TO BE FIXED, MAY BE epiend which is the problem.
-	  ELSE ISNULL(Datepart(YEAR, ip.disdate), Datepart(YEAR, ip.epiend)) 
+	  THEN ISNULL(DATEPART(YEAR, ip.epiend), DATEPART(YEAR, ip.epistart))
+	  ELSE ISNULL(DATEPART(YEAR, ip.disdate),
+	    ISNULL(DATEPART(YEAR, ip.epiend), DATEPART(year, ip.epistart))
+		) 
 	  END [year]
 	
+  ,CASE
+     WHEN disdate = '1801-01-01'
+	 THEN ISNULL(ip.epiend, ip.epistart)
+	 ELSE ISNULL(ip.disdate, ISNULL(ip.epiend, ip.epistart)) 
+  END [date]
  
   ,CASE 
 	WHEN disdate = '1801-01-01'
-	THEN ISNULL(Datepart(MONTH, ip.epiend), Datepart(MONTH, ip.epistart)) 
-	ELSE ISNULL(Datepart(MONTH,ip.disdate), Datepart(MONTH, ip.epiend))
+	THEN ISNULL(DATEPART(MONTH, ip.epiend), DATEPART(MONTH, ip.epistart)) 
+	ELSE ISNULL(DATEPART(MONTH,ip.disdate),
+	   ISNULL(DATEPART(MONTH, ip.epiend), DATEPART(MONTH, ip.epistart))
+		) 
 	END [month]
   
   ,ip.encrypted_hesid
    
     ,CASE 
 	   WHEN disdate = '1801-01-01'
-	   THEN DATEDIFF(Y
+	   -- WHEN 1801 USE EPISTART IF NO EPIEND  :
+	   THEN ISNULL((DATEDIFF(Y
                     ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
                     ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
-                     ) / 365
+                     ) / 365)
+					 ,(DATEDIFF(Y
+                    ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                    ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
+                     ) / 365)
+					 )
+	   -- BUT PREDOMINANTLY USE DISDATE:
 	   ELSE ISNULL((DATEDIFF(Y
                              ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.disdate))+ '-01-01')
+                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.disdate))+ '-01-01')
                              ) / 365)
 				   ,(DATEDIFF(Y
                              ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATepart(YY, ip.epiend))+ '-01-01')
+                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
                               ) / 365)
 					 ) 
 	   END [age_jan1]
@@ -59,33 +165,35 @@ FROM (
     --,ip.startage
 	,ip.sex as [gender]    
     ,ip.admidate
+	,ip.epistart
 	,ip.epiend
 	,ip.disdate
+	,d.dod
    
-    --, resladst_ons
+    --, resladst_ons -- only for 201617
     , lsoa01
-    --, lsoa11 -- for years after 2015
+    --, lsoa11 -- for years after 201415
    
-    , ISNULL(DATEDIFF(dd, ip.admidate, ip.disdate) 
+    ,ISNULL(DATEDIFF(dd, ip.admidate, ip.disdate) 
 	         ,DATEDIFF(dd, ip.admidate, ip.epiend)
 			 ) as [beddays] -- is this a naive way to count bed days?
     
 	,cause_of_death
     
-	,LEFT(cause_of_death, 1) as [cod_1]
+	,LEFT(cause_of_death, 1) as [cod1]
    
     , CASE
-        WHEN d.Encrypted_HESid IS NULL
-        THEN NULL -- SET AS NULL FOR THOSE WITHOUT DEATH RECORD 
-        WHEN DATEDIFF(dd, ip.admidate, d.DOD) between 0 and 40000 
+        --WHEN d.Encrypted_HESid IS NULL
+        --THEN NULL -- SET AS NULL FOR THOSE WITHOUT DEATH RECORD 
+        WHEN DATEDIFF(DD, ip.disdate, d.DOD) between 0 and 40000 
         THEN CAST(
           FLOOR(
-            DATEDIFF(dd, ip.admidate, d.DOD)/30.42 -- average days in a month
+            DATEDIFF(DD, ip.disdate, d.DOD) /30.42 -- average days in a month
                     ) AS INT
                )
-        WHEN DATEDIFF(dd, ip.admidate, d.DOD) < 0
+        WHEN DATEDIFF(DD, ip.disdate, d.DOD) < 0
         THEN 999999 -- Error code will be 999999
-        ELSE 999999 
+        ELSE NULL 
     END [prox_to_death]
   
     ----
@@ -115,3 +223,6 @@ FROM (
     AND epiorder = 1
     AND admimeth LIKE '2%' -- EMERGENCY ADMISSIONS 
     ) cte
+	)cte2
+	)cte3
+	
