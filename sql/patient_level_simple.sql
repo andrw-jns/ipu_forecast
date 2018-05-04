@@ -6,6 +6,15 @@ SELECT *
             ,CONVERT(DATE, '2016-04-01')
              )
  ) [lower_bound] -- DiFFERENCE BETWEEN ADMISSION AND END OF DEATHS DATA
+ ,CASE
+   WHEN prox_to_death < 12
+   THEN 1
+   WHEN prox_to_death > 11 AND prox_to_death < 24
+   THEN 2
+   WHEN prox_to_death > 23 AND prox_to_death < 36
+   THEN 3
+   ELSE NULL
+   END [ttd]
  FROM (
 SELECT 
 
@@ -55,13 +64,13 @@ SELECT
 							  )
 					 ) 
 	   END [age_jan1]
-	,ip.startage
+	--,ip.startage
 	,ip.sex as [gender]    
-    ,ip.admidate
-	,ip.epistart
-	,ip.epiend
-	,ip.disdate
-	,d.dod
+ --   ,ip.admidate
+	--,ip.epistart
+	--,ip.epiend
+	--,ip.disdate
+	--,d.dod
 	,lsoa01
     --, lsoa11 -- for years after 201415
    
@@ -69,7 +78,7 @@ SELECT
 	         ,DATEDIFF(dd, ip.admidate, ip.epiend)
 			 ) as [beddays] -- is this a naive way to count bed days?
     
-	,cause_of_death
+	--,cause_of_death
     
 	,LEFT(cause_of_death, 1) as [cod1]
    
