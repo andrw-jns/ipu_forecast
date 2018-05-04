@@ -15,27 +15,42 @@ SELECT
   ,cte3.[year_adjust]
   ,cte3.[date]
   ,cte3.[encrypted_hesid]
-  ,cte3.[age_jan1]
-  ,cte3.[gender]
-  ,cte3.[disdate]
+  --,cte3.[age_jan1]
+  --,cte3.[gender]
+  --,cte3.[disdate]
   ,cte3.[dod]
-  ,cte3.[lsoa01]
-  ,cte3.[beddays]
-  ,cte3.[cause_of_death]
-  ,cte3.[cod1]
-  ,cte3.[lower_bound]
-  ,cte3.[prox_to_death]
+  --,cte3.[lsoa01]
+  ----,cte3.[beddays]
+  ----,cte3.[cause_of_death]
+  ----,cte3.[cod1]
+  --,cte3.[lower_bound] -- lower bound will be out of date now
+  --,cte3.[prox_to_death]
+
+  --select datediff(MM, CONVERT(DATE, '2015-04-01'), CONVERT(DATE, '2015-06-15'))
+  --,cte3.prox_to_death
+    ,[boolean]
+	,[month_adjust]
+	,[year_adjust]
+	,[prox_to_death]
   ,DATEDIFF(MM
     ,CONVERT(DATE, CONVERT(NVARCHAR(4),cte3.year_adjust) + '-' + CONVERT(NVARCHAR(2), cte3.month_adjust) +'-01')
 	,cte3.dod
 	) [prox_test]
-  
-
+   
+ --  ,DATEDIFF(MM
+ --   ,CONVERT(DATE, CONVERT(NVARCHAR(4),cte3.year_adjust) + '-' + CONVERT(NVARCHAR(2), cte3.month_adjust) + '-' + CONVERT(NVARCHAR(2), DATEPART(DD, cte3.date)))
+	--,cte3.dod
+	--) [prox_t2]
+	-- I'm guessing february is a problem here.
+  ,CONVERT(NVARCHAR(4),cte3.year_adjust)
+  ,CONVERT(NVARCHAR(2), cte3.month_adjust)
+  ,CONVERT(NVARCHAR(2), DATEPART(DD, cte3.date))
+   ,CONVERT(DATE, '2016-02-29')
 
 FROM (
 SELECT * 
 ,CASE
-  WHEN cte2.month < 12 AND cte2.boolean = 1
+  WHEN cte2.month < 12 AND cte2.boolean = 1 -- DATEPART(dd, cte.date) > DATEPART(dd, cte.dod)
   THEN cte2.month +1
   WHEN cte2.month = 12 AND cte2.boolean = 1
   THEN 1
@@ -174,13 +189,13 @@ FROM (
     , lsoa01
     --, lsoa11 -- for years after 201415
    
-    ,ISNULL(DATEDIFF(dd, ip.admidate, ip.disdate) 
-	         ,DATEDIFF(dd, ip.admidate, ip.epiend)
-			 ) as [beddays] -- is this a naive way to count bed days?
+ --   ,ISNULL(DATEDIFF(dd, ip.admidate, ip.disdate) 
+	--         ,DATEDIFF(dd, ip.admidate, ip.epiend)
+	--		 ) as [beddays] -- is this a naive way to count bed days?
     
-	,cause_of_death
+	--,cause_of_death
     
-	,LEFT(cause_of_death, 1) as [cod1]
+	--,LEFT(cause_of_death, 1) as [cod1]
    
     , CASE
         --WHEN d.Encrypted_HESid IS NULL
@@ -225,4 +240,4 @@ FROM (
     ) cte
 	)cte2
 	)cte3
-	
+	WHERE BOOLEAN = 1
