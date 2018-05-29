@@ -8,12 +8,12 @@
 
 --RIGHT JOIN (
 
-
+SELECT *
+FROM (
       SELECT *
-      -- id
-      --,yr
-      --,year2
+      
       FROM 
+	  --- TABLE 1:
         (VALUES
            ('A', 2007)
           ,('A', 2009)
@@ -22,6 +22,8 @@
       
       
       LEFT JOIN (
+	  -- TO TABLE 2, CREATING TABLE 3:
+
       			SELECT  [year]
       				   ,[year2]
       
@@ -32,12 +34,79 @@
       			  ) y
       			  
         	ON teens.yr = y.year
-       
-	   
+	) T3
+	WHERE NOT EXISTS (SELECT 1
+						FROM (
+								SELECT *
+								FROM 
+								--- TABLE 1:
+								  (VALUES
+								     ('A', 2007)
+								    ,('A', 2009)
+								    ,('B', 2008)
+								     ) AS teens2(id, yr)
+								) T1
+								
+								WHERE T3.year2 = T1.yr
+						)
+
+     
+/***** 
+OTHER WAY ROUND
+DOES NOT WORK
+*******/
+
+
+SELECT *
+FROM (
+	VALUES ('A', 2007)
+          ,('A', 2009)
+		  ,('B', 2008)
+	) AS teens2(id, yr)
+ 
+	WHERE not EXISTS (
+						SELECT 1
+						FROM (
+								SELECT *
+								FROM 
+								--- TABLE 1:
+								  (
+								   SELECT *
+      
+									FROM 
+									--- TABLE 1:
+									  (VALUES
+									     ('A', 2007)
+									    ,('A', 2009)
+									    ,('B', 2008)
+									     ) as teens(id, yr)
+									
+									
+									LEFT JOIN (
+									-- TO TABLE 2, CREATING TABLE 3:
+
+												SELECT  [year]
+													   ,[year2]
+									
+												FROM
+												  (VALUES (2007),(2008),(2009),(2010)) as g ([year])
+												  cross join (VALUES (2007),(2008),(2009),(2010)) a([year2])
+												  WHERE [year] <> [year2]
+												  ) y
+												  
+									  	ON teens.yr = y.year
+	
+   
+																) a) T1
+													WHERE teens2.yr = T1.year2			
+																
+														)
+									 
+									 
 	 
    
    
-   
+
    
    
    
