@@ -53,55 +53,55 @@ FROM (
   END [age_adjust]
 	  
 	FROM(
-		SELECT TOP (100) --[File]
-      deaths.[encrypted_hesid]
-	  ,CASE 
-	   WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
-	   -- HIERARCHY: DISDATE, EPIEND, EPISTART
-	   -- WHEN 1800 ETC. USE EPIEND THEN EPISTART
-	   THEN ISNULL((DATEDIFF(Y
-                    ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16') -- take dob to be mid month
-                    ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
-                     ) / 365)
-					 ,(DATEDIFF(Y
-                    ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                    ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
-                     ) / 365)
-					 )
-	   -- BUT PREDOMINANTLY USE DISDATE:
-	   ELSE ISNULL((DATEDIFF(Y
-                             ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.disdate))+ '-01-01')
-                             ) / 365)
-				   , ISNULL((DATEDIFF(Y
-                             ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
-                              ) / 365),
-							  (DATEDIFF(Y
-                             ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                             ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
-                              ) / 365)
+	            	SELECT TOP (100) --[File]
+                  deaths.[encrypted_hesid]
+	              ,CASE 
+	               WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
+	               -- HIERARCHY: DISDATE, EPIEND, EPISTART
+	               -- WHEN 1800 ETC. USE EPIEND THEN EPISTART
+	               THEN ISNULL((DATEDIFF(Y
+                                ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16') -- take dob to be mid month
+                                ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
+                                 ) / 365)
+	            				 ,(DATEDIFF(Y
+                                ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                                ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
+                                 ) / 365)
+	            				 )
+	               -- BUT PREDOMINANTLY USE DISDATE:
+	               ELSE ISNULL((DATEDIFF(Y
+                                         ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                                         ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.disdate))+ '-01-01')
+                                         ) / 365)
+	            			   , ISNULL((DATEDIFF(Y
+                                         ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                                         ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
+                                          ) / 365),
+	            						  (DATEDIFF(Y
+                                         ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                                         ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
+                                          ) / 365)
 
-							)
-					) 
-	   END [age_jan1]
-	  ,ip.sex as [gender]
-	  ,ip.soal
-	  --,deaths.[DerivedAge] as [age_death]
-	  --,deaths.sex as [gender]
-	  --local authority
-	  ,CASE
-		WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
-		THEN ISNULL(ip.epiend, ip.epistart)
-		ELSE ISNULL(ip.disdate, ISNULL(ip.epiend, ip.epistart)) 
-      END [date]
-      ,[DOD]
-      --,[DOR]
-      --,[RESSTHA]
-      --,[RESPCT]
-  FROM [ONS].[HESONS].[tbMortalityto1617] deaths
+				            			)
+		                			) 
+	              END [age_jan1]
+	             ,ip.sex as [gender]
+	             ,ip.soal
+	             --,deaths.[DerivedAge] as [age_death]
+	             --,deaths.sex as [gender]
+	             --local authority
+	             ,CASE
+		            WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
+		            THEN ISNULL(ip.epiend, ip.epistart)
+		            ELSE ISNULL(ip.disdate, ISNULL(ip.epiend, ip.epistart)) 
+                 END [date]
+                 ,[DOD]
+                 --,[DOR]
+                 --,[RESSTHA]
+                 --,[RESPCT]
+         FROM [ONS].[HESONS].[tbMortalityto1617] deaths
   
-  -- JOIN TO ADMISSIONS UPTO 5 CALENDAR YEARS BACKWARDS (MIN YEAR 0506 FOR 2006)
+  -- JOIN TO ADMISSIONS UPTO 5 CALENDAR YEARS BACK(MIN YEAR WILL BE 0506 FOR 2006)
   -- FOR 2010 INVOLVES 1011, 0910, 0809, 0708, 0607, 0506 
   -- ie. COMPLETE 2010, 2009, 2008, 2007, 2006, 
   -- ANY OTHER DEATHS GO IN UNKNOWN TTD CATEGORY.

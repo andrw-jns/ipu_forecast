@@ -6,10 +6,10 @@ FROM (
       FROM 
 	  --- ORIGINAL TABLE 1:
         (VALUES
-           ('A', 2007)
-          ,('A', 2009)
-          ,('B', 2008)
-           ) as orig(id, yr)
+           ('A', 60, 2007)
+          ,('A', 62, 2009)
+          ,('B', 80, 2008)
+           ) as orig(id, age, yr)
       
       
       LEFT JOIN (
@@ -31,13 +31,14 @@ FROM (
                       SELECT 1
 					  FROM (
 							SELECT *
-							FROM (
-							-- TABLE 1:
+							FROM 
+							     (
+							-- TABLE 1: (BUT ONLY NEED ID AND ADJUSTED YEAR)
 							    VALUES
-							      ('A', 2007)
-							      ,('A', 2009)
-							      ,('B', 2008)
-							      ) AS teens2(id, yr)
+							      ('A', 60, 2007)
+          						  ,('A', 62, 2009)
+          						  ,('B', 80, 2008)
+							      ) AS teens2(id, age, yr)
 							) orig1
 								
 							WHERE (CTE1.year2 = orig1.yr AND CTE1.id = orig1.id)
