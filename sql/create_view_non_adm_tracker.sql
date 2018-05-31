@@ -10,17 +10,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-CREATE VIEW [vw_prx_death_tracker] AS 
+ALTER VIEW [vw_prx_death_tracker] AS 
 
 
-SELECT * -- CTE2 BEGINS
-    --   ,[encrypted_hesid]
-	--   ,[year_adjust] -- year is the same as year_adjust
-	--   ,[year2]
-	  --,[age]
-	  -- ,[gender]
-	  -- ,[soal]
-FROM (
  -- SELECT THE REQUIRED INFO FROM DEATHS AND ADMISSIONS FOR MANY YEARS OF ADMISSIONS
  -- FOR THOSE DYING IN THE CALENDAR YR 2010
  -- GO BACK AS MANY YEARS AS THERE ARE TTD YEARS
@@ -53,7 +45,7 @@ FROM (
   END [age_adjust]
 	  
 	FROM(
-	            	SELECT TOP (100) --[File]
+	            	SELECT -- TOP (100) --[File]
                   deaths.[encrypted_hesid]
 	              ,CASE 
 	               WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
@@ -205,4 +197,3 @@ FROM (
    ON deaths.encrypted_hesid = ip.encrypted_hesid
    WHERE (DOD >= '2010-01-01' AND DOD < '2011-01-01')
 ) CTE1
-) CTE2
