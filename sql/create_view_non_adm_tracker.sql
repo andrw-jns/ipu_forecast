@@ -43,9 +43,23 @@ ALTER VIEW [vw_prx_death_tracker] AS
 	  THEN age_jan1 +1
 	ELSE age_jan1
   END [age_adjust]
+  ,CASE
+   WHEN prox_to_death < 12
+   THEN 1
+   WHEN prox_to_death > 11 AND prox_to_death < 24
+   THEN 2
+   WHEN prox_to_death > 23 AND prox_to_death < 36
+   THEN 3
+   WHEN prox_to_death > 35 AND prox_to_death < 48
+   THEN 4
+   WHEN prox_to_death > 47 AND prox_to_death < 60
+   THEN 5
+   ELSE NULL
+   END [ttd]
+
 	  
 	FROM(
-	            	SELECT -- TOP (100) --[File]
+	            	SELECT TOP (100) --[File]
                   deaths.[encrypted_hesid]
 	              ,CASE 
 	               WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
@@ -88,6 +102,18 @@ ALTER VIEW [vw_prx_death_tracker] AS
 		            ELSE ISNULL(ip.disdate, ISNULL(ip.epiend, ip.epistart)) 
                  END [date]
                  ,[DOD]
+				 , CASE
+        WHEN DATEDIFF(DD, ip.admidate, deaths.DOD) between 0 and 40000 
+        THEN CAST(
+          FLOOR(
+            DATEDIFF(DD, ip.admidate, deaths.DOD) /30.42 -- average days in a month
+                    ) AS INT
+               )
+        WHEN DATEDIFF(DD, ip.admidate, deaths.DOD) < 0
+        THEN 999999 -- Error code will be 999999
+        ELSE NULL 
+    END [prox_to_death]
+	
                  --,[DOR]
                  --,[RESSTHA]
                  --,[RESPCT]
@@ -106,6 +132,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 				   ,[sex]
 				   ,[soal]
 				   ,[mydob]
+				   ,[admidate]
 			FROM 
 			[HESDATA].[DBO].[tbinpatients1011]
 			WHERE 
@@ -122,6 +149,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 					,[sex]
 					,[soal]
 					,[mydob]
+					,[admidate]
 			 FROM 
 			 [HESDATA].[DBO].[tbinpatients0910]
 			 WHERE 
@@ -138,6 +166,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 					,[sex]
 					,[soal]
 					,[mydob]
+					,[admidate]
 			FROM 
 			[HESDATA].[DBO].[tbinpatients0809]
 			WHERE 
@@ -154,6 +183,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 					,[sex]
 					,[soal]
 					,[mydob]
+					,[admidate]
 			FROM 
 			[HESDATA].[DBO].[tbinpatients0708]
 			WHERE 
@@ -170,6 +200,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 					,[sex]
 					,[soal]
 					,[mydob]
+					,[admidate]
 			FROM 
 			[HESDATA].[DBO].[tbinpatients0607]
 			WHERE 
@@ -186,6 +217,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 					,[sex]
 					,[soal]
 					,[mydob]
+					,[admidate]
 			FROM 
 			[HESDATA].[DBO].[tbinpatients0506]
 			WHERE 
