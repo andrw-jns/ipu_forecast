@@ -87,7 +87,7 @@ SELECT
 -- 	    ISNULL(DATEPART(YEAR, ip.epiend), DATEPART(year, ip.epistart))
 -- 		) 
 -- 	  END [year]
-   DATEPART(YY, ip.admidate) AS [year]
+   -- DATEPART(YY, ip.admidate) AS [year]
 	--  ,CASE
   --    WHEN DATEPART(YY, ip.disdate) IN (1800, 1801)
 	--  THEN ISNULL(ip.epiend, ip.epistart)
@@ -95,11 +95,10 @@ SELECT
   -- END [date]
 	,CASE
      WHEN -- DATEPART(YY, admidate) LIKE '19%' OR 
-		  	DATEPART(YY, admidate) LIKE '18%'
-					OR DATEPART(YY, admidate) LIKE '15%'
+		  	DATEPART(YY, admidate) < 1950
 	 THEN NULL
 	 ELSE DATEPART(YY, admidate)
-  END [date]
+  END [year]
  
  
 
@@ -135,6 +134,7 @@ SELECT
 		-- 					  )
 		-- 			 ) 
 	  --  END [age_jan1]
+
   ,DATEDIFF(Y
                     ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
                     ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.admidate))+ '-01-01')
@@ -161,7 +161,7 @@ SELECT
     
 
 	,CASE 
-	  WHEN DATEPART(YY, ip.disdate) IN (1800, 1801)
+	  WHEN DATEPART(YY, ip.disdate) < 2000 -- IN (1800, 1801)
 	  THEN DATEDIFF(dd, ip.admidate, ip.epiend)
 	  ELSE ISNULL(DATEDIFF(dd, ip.admidate, ip.disdate) 
 	         ,DATEDIFF(dd, ip.admidate, ip.epiend)
@@ -169,7 +169,7 @@ SELECT
 	  END [beddays]
 
 
-	,cause_of_death
+	,icd_chap.ChapterCode AS [death_chapter]
    -- BY ICD10 CHAPTER    
 	--,LEFT(cause_of_death, 1) as [cod1]
    
@@ -215,10 +215,17 @@ SELECT
     ON ip.Encrypted_HESID = d.Encrypted_HESID
     
     ---
-    
+    LEFT JOIN [Reference].[dbo].[DIM_tbDiagnosis] icd_chap
+    ON d.CAUSE_OF_DEATH = icd_chap.DiagnosisCode
+
+
+
     WHERE 
     1 = 1 
     AND epiorder = 1
     AND admimeth LIKE '2%' -- EMERGENCY ADMISSIONS
 	
 	)CTE1
+
+WHERE CTE1.age_jan1 < 110
+AND (CTE1.gender = 1 OR CTE1.gender = 2)
