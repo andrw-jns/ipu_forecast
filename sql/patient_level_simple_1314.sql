@@ -119,8 +119,8 @@ SELECT
           FLOOR(
             DATEDIFF(DD, ip.admidate, d.DOD) / 30.41   --30.42 = average days in a month
                     ) AS INT													-- 30.41 tips the 365th day into the next year (FIRST DAY IS 0)
-               ) 
-        WHEN DATEDIFF(DD, ip.admidate, d.DOD) < 0
+               ) 																			-- Note: 3.41 will cause issues around the 3 year mark (not so serious)
+        WHEN DATEDIFF(DD, ip.admidate, d.DOD) < 0     -- Could be addressed by making prox_death a float and using ttd to select to the decimal place.
         THEN 999999 -- Error code will be 999999
         ELSE NULL 
     END [prox_to_death]
