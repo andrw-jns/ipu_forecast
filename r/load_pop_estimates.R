@@ -1,12 +1,11 @@
 #############################
-"LOAD"
-"POPULATION ESTIMATES"
+"LOAD POPULATION ESTIMATES"
 #############################
 
 "updates available end may 2018"
 
 library(tidyverse)
-library(readxl)  
+library(readxl) # readxl 1.1.0 has bug for xls files. If needed, open in Excel and resave as xlsx 
 library(rvest)  
 library(here)
 #library(fs)
@@ -43,19 +42,6 @@ load_new_format <- function(file, year, gender){
     clean_new_format(year, gender) %>%
     gather_new_format()
 }
-
-
-# load_new_format <- function(file, year, gender){ # gender must have initial CAP
-#   read_excel(file,
-#              sheet = paste0("Mid-", year, " ", gender),
-#              skip = 3) %>%
-#     janitor::clean_names() %>%
-#     filter(!is.na(area_names),
-#            str_detect(area_codes, "^E")) %>%
-#     mutate(yr = year, gender = gender) %>%
-#     select(yr, gender, everything(), -x_1, -all_ages) %>%
-#     gather_new_format()
-# }
 
 
 data_slash <- function(x){
@@ -227,3 +213,29 @@ ggplot()+
   # Make a package. 
   # Do some more exploring around purr Fay and Bryan
   # Web apis and scraping.
+
+
+
+# Add cohort --------------------------------------------------------------
+
+lookup_cohort <- tibble(yob = 1907:2016,
+                        cohort = c(rep(1907, 10),
+                                   rep(1917, 10),
+                                   rep(1927, 10),
+                                   rep(1937, 10),
+                                   rep(1947, 10),
+                                   rep(1957, 10),
+                                   rep(1967, 10),
+                                   rep(1977, 10),
+                                   rep(1987, 10),
+                                   rep(1997, 10),
+                                   rep(2007, 10)
+                        ))
+
+
+test <- test %>% mutate(yob = as.numeric(year) - age)
+
+test <- test %>% left_join(lookup_cohort, by = "yob")
+
+
+
