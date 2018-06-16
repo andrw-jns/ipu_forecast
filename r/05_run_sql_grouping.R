@@ -45,8 +45,8 @@ WHERE table_name  LIKE '%aj_180613_proxdeath%'
 # Parameters --------------------------------------------------------------
 
 years <- create_year_vector(0405, 11)
-lsoa_type <- c(rep("soal", 9), rep("lsoa01",2))
-table_names <- test$table_name
+# lsoa_type <- c(rep("soal", 9), rep("lsoa01",2))
+# table_names <- test$table_name
  
 # Groups - Note (and interrogate) local authority movements ---------------
 
@@ -58,20 +58,20 @@ SELECT year_adjust
       ,encrypted_hesid -- helpful for checks
       ,age_adjust
       ,gender
-      ,utla17nm
+      ,utla
       ,death_chapter
       ,cohort 
       ,ttd
       ,COUNT(*) as [n_adm]
       ,SUM(beddays) as [bed_days]
-INTO strategicworking.defaults.aj_180614_proxdeath_grouped", years[i],
-" FROM strategicworking.defaults.aj_180614_proxdeathlsoa", years[i],
+INTO strategicworking.defaults.aj_180616_proxdeath_grouped", years[i],
+" FROM strategicworking.defaults.aj_180615_select_utla", years[i],
 " GROUP BY -- invariants
         year_adjust
         ,encrypted_hesid
         ,age_adjust
         ,gender
-        ,utla17nm -- could vary during the year
+        ,utla -- fixed on the last episode
         ,death_chapter
         ,cohort 
         ,ttd
@@ -79,23 +79,23 @@ INTO strategicworking.defaults.aj_180614_proxdeath_grouped", years[i],
         )
 }
 
-# NO PERMISSIONS TO DO THIS:
+# CAREFUL : DROPPING MULTIPLE TABLES
 # for(i in seq_along(years)){
 # 
-# dbRemoveTable(con_sw, str_c("strategicworking.defaults.aj_180614_proxdeath_zgrouped", years[i]))
+# dbExecute(con_sw, str_c("drop table strategicworking.defaults.aj_180616_proxdeath_grouped", years[i]))
 # 
 #   }
 
 
 # Quick interrogation -----------------------------------------------------
 
-library(dbplot)
-test <- tbl(con_sw, in_schema("DEFAULTS", "aj_180614_proxdeath_grouped1415")) 
-
-test %>% count(bed_days) %>% arrange(-bed_days) 
-tmp <- test %>% head(5) %>% collect
-
-test %>% filter(year_adjust < 2014) %>% dbplot_bar(year_adjust)
+# library(dbplot)
+# test <- tbl(con_sw, in_schema("DEFAULTS", "aj_180614_proxdeath_grouped1415")) 
+# 
+# test %>% count(bed_days) %>% arrange(-bed_days) 
+# tmp <- test %>% head(5) %>% collect
+# 
+# test %>% filter(year_adjust < 2014) %>% dbplot_bar(year_adjust)
 # 1. a variety of odd years (but low numbers)
 # 2. Good - 0.1 % lacking local authority
 # 3. Good - no-one lacking a cohort
@@ -103,74 +103,135 @@ test %>% filter(year_adjust < 2014) %>% dbplot_bar(year_adjust)
 
 # Now check issues with local authority migration -------------------------
 
-test %>% 
+
+
+test2 <- tbl(con_sw, in_schema("DEFAULTS", "aj_180616_proxdeath_grouped1415")) 
+
+test2 %>% count(is.na(utla)) 
+
+# 2. Good - Still only 0.1 % lacking local authority
+
+
+test2 %>% 
+  filter(year_adjust == 2014) %>% 
+  count(encrypted_hesid) %>%
+  arrange(desc(n)) %>% show_query()
+
+"Still some issues with duplicates"
+
+test2 %>% 
   filter(year_adjust == 2014) %>% 
   count(encrypted_hesid) %>%
   count(n) %>% 
   arrange(n)
+  
+  # 2004:
+  # 1 2030489
+  # 2     492
+  # 3       2
+  
+  # 2014:
+  # 1     1 2750804
+  # 2     2     218
+  # 3     3       3
+  # 4     7       1
+# 5    18       1
+# 6    25       1
 
-test %>% 
-  filter(year_adjust == 2014) %>% 
-  count(encrypted_hesid) %>%
-  arrange(desc(n))
-
-# 28 RECORDED DUPLICATIONS:
-test %>% filter(encrypted_hesid == "2BB14CBCF264A6EA5ADCE27978855261") %>% collect %>% View()
-"THIS IS PROBABLY AN ERROR HESID - MANY DIFFERENT PEOPLE, NO TTD"
-
-# 12 RECORDED DUPLICATIONS:
-test %>% filter(encrypted_hesid == "E5554CA65D9E58DB68E05662A9BE3962") %>% collect %>% View()
-"THIS IS PROBABLY AN ERROR HESID - MANY DIFFERENT PEOPLE, NO TTD"
-
-# MORE LIKELY TO FIND ISSUES WITH 200/ 10K PROPLE WHO HAVE 3/2 RECORDS PER ENCRYPTED_HESID
-test %>% 
-  filter(year_adjust == 2014) %>% 
-  count(encrypted_hesid) %>%
-  filter(n < 5) %>% 
-  arrange(desc(n))
+# 0.025% have these problems of duplication
 
 
-test %>% filter(encrypted_hesid == "6FB418CA812897C262C0E60D7593C976") %>% collect %>% View()
+#  For 2004: --------------------------------------------------------------
+
+# 3 RECORDED DUPLICATIONS:
+test2 %>% filter(encrypted_hesid == "FF636A26177350B769151677C4D8079D") %>% collect %>% View()
+"THIS IS perhaps bad coding in early years"
+
+"CHECK WHAT IT'S LIKE IN LATER YEARS"
+
+# 2 RECORDED DUPLICATIONS:
+test2 %>% filter(encrypted_hesid == "0CA9BC41C8443AE120465E65AD315455") %>% collect %>% View()
+test2 %>% filter(encrypted_hesid == "A8DC26FC0C2787D7901D20758B2D8F2C") %>% collect %>% View()
+"They seem to be age issues - different ages assigned"
+
+# Could do the ranking operation once more? But would have to be when split into 
+# calendar years. 
+
+# 1. Before acting, check if these problems exist in later years.
 
 
-"YES; It is an issue affecting 0.4% and possibly most likely in old people due move to care homes:
-probably needs fixing"
+# For 2014 ----------------------------------------------------------------
 
+# 25 RECORDED DUPLICATIONS:
+test2 %>% filter(encrypted_hesid == "2BB14CBCF264A6EA5ADCE27978855261") %>% collect %>% View()
+test2 %>% filter(encrypted_hesid == "F29EF7D56769A54500513B49F358DA1F") %>% collect %>% View()
 
-test %>% filter(year_adjust< 2013) %>% collect %>% View()
-"Think the year selection can be done after union-ing the tables"
-
-
-table_names2 <- DBI::dbGetQuery(con_sw,
-                        "SELECT *
-                        FROM information_schema.tables
-                        WHERE table_name  LIKE '%aj_180614_proxdeath_grouped%'
-                        ") %>% 
-  clean_names() %>% 
-  select(table_name)
-
-table_names2[1]
-
-dbExecute(con_sw,
-           "SELECT top 10 *
-            FROM defaults.aj_180614_proxdeath_grouped0405
-          ")
+"CONCLUSION:"
+"LATER YEARS THERE ARE CASES WHERE 1 HESID ASSIGNED TO MANY DIFFERENT PEOPLE;
+A WIDE VARIETY OF AGES. AS THESE CASES ARE VERY FEW 0.008% EITHER EXCLUDING OR INCLUDING 
+WILL HAVE NEGLIGIBLE EFFECT. AS HES ID IS IRRELVENT IN MODEL, THEY WILL BE TREATED AS 
+INDIVIDUALS (WHICH SOME OF THEM ARE) SO LEAVE THEM IN THE DATA FOR NOW - LESS WORK. COULD
+BE CHANGED AT A LATER DATE IF NECESSARY."
 
 
 
 
-map_chr(years[1:10], function(x){dbExecute(con_sw,
-                                           str_c("SELECT top 10 *
-            FROM defaults.aj_180614_proxdeath_grouped", x, "
-                                 UNION ALL "))}
 
-str_flatten(map_chr(years, 
-                    function(x){
-                      str_c("SELECT * FROM defaults.aj_180614_proxdeath_grouped", x, " UNION ALL ")
-                      }
-                    ))
-# Remove the last UNION ALL, and an INTO, and insert string into:
+# Old working: -------------------------------------------------------------
 
-dbExecute(con_sw,
-          "SELECT * INTO defaults.aj_180614_proxdeath_ALL FROM defaults.aj_180614_proxdeath_grouped0405 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped0506 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped0607 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped0708 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped0809 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped0910 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped1011 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped1112 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped1213 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped1314 UNION ALL SELECT * FROM defaults.aj_180614_proxdeath_grouped1415 ")
-# 41140624 rows.
+# 
+# test %>% 
+#   filter(year_adjust == 2014) %>% 
+#   count(encrypted_hesid) %>%
+#   count(n) %>% 
+#   arrange(n)
+# 
+# test %>% 
+#   filter(year_adjust == 2014) %>% 
+#   count(encrypted_hesid) %>%
+#   arrange(desc(n))
+# 
+# # 28 RECORDED DUPLICATIONS:
+# test %>% filter(encrypted_hesid == "2BB14CBCF264A6EA5ADCE27978855261") %>% collect %>% View()
+# "THIS IS PROBABLY AN ERROR HESID - MANY DIFFERENT PEOPLE, NO TTD"
+# 
+# # 12 RECORDED DUPLICATIONS:
+# test %>% filter(encrypted_hesid == "E5554CA65D9E58DB68E05662A9BE3962") %>% collect %>% View()
+# "THIS IS PROBABLY AN ERROR HESID - MANY DIFFERENT PEOPLE, NO TTD"
+# 
+# # MORE LIKELY TO FIND ISSUES WITH 200/ 10K PROPLE WHO HAVE 3/2 RECORDS PER ENCRYPTED_HESID
+# test %>% 
+#   filter(year_adjust == 2014) %>% 
+#   count(encrypted_hesid) %>%
+#   filter(n < 5) %>% 
+#   arrange(desc(n))
+# 
+# 
+# test %>% filter(encrypted_hesid == "6FB418CA812897C262C0E60D7593C976") %>% collect %>% View()
+# 
+# 
+# "YES; It is an issue affecting 0.4% and possibly most likely in old people due move to care homes:
+# probably needs fixing"
+# 
+# 
+# test %>% filter(year_adjust< 2013) %>% collect %>% View()
+# "Think the year selection can be done after union-ing the tables"
+# 
+# 
+# table_names2 <- DBI::dbGetQuery(con_sw,
+#                         "SELECT *
+#                         FROM information_schema.tables
+#                         WHERE table_name  LIKE '%aj_180614_proxdeath_grouped%'
+#                         ") %>% 
+#   clean_names() %>% 
+#   select(table_name)
+# 
+# table_names2[1]
+# 
+# dbExecute(con_sw,
+#            "SELECT top 10 *
+#             FROM defaults.aj_180614_proxdeath_grouped0405
+#           ")
+# 
+# 
+# 
