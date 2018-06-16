@@ -3,7 +3,6 @@ library(dbplyr)
 library(DBI)
 library(odbc)
 
-
 con <- dbConnect(odbc(), 
                  Driver = "SQL Server", 
                  Server = "MLCSU-BI-SQL-SU", 
@@ -60,12 +59,15 @@ tbdiagnoses <- tbdiagnoses %>%
 # stringi::tri_trans_general("\u0104", "nfd; lower")
 # Sample only these rows (1-40) because of odd characters: 
 
+tbdiagnoses <- tbdiagnoses %>% 
+  mutate(DiagnosisDescription = stringi::stri_trans_general(DiagnosisDescription, "latin-ascii")) %>% 
+  janitor::clean_names()
 
+# tbdiagnoses %>% slice(1128:1132) %>% View()
+# 
+# devtools::install_github("rstats-db/odbc@SQLTable")
 
-tbdiagnoses %>% slice(1128:1132) %>% View()
+dbWriteTable(con, "aj_180613_icd10_chapter_fix", tbdiagnoses)
 
-devtools::install_github("rstats-db/odbc@SQLTable")
-
-dbWriteTable(con, "aj_180607_icd10_chap_fix", tbdiagnoses)
-copy_to(con, test1, in_schema("DEFAULTS", "aj_180607_icd10_chap_fix"), temporary = F)
+# copy_to(con, test1, in_schema("DEFAULTS", "aj_180607_icd10_chap_fix"), temporary = F)
 
