@@ -19,7 +19,7 @@
 
 SELECT *, -- CTE3 BEGINS
   [age_adjust] - ([year] - [year2]) AS [age_countbk]
-  
+  -- NEED A TIME TO DEATH COUNTBACK?
 FROM (
 
 SELECT * -- CTE2 BEGINS
@@ -36,8 +36,8 @@ LEFT JOIN (
 				   ,[year2]
 
 			FROM
-			  (VALUES (2007),(2008),(2009),(2010)) as g ([year])
-			  cross join (VALUES (2007),(2008),(2009),(2010)) a([year2])
+			  (VALUES(2008),(2009),(2010)) as g ([year])
+			  cross join (VALUES (2008),(2009),(2010)) a([year2])
 			  WHERE [year] <> [year2]
 			  ) y
 			  
