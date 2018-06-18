@@ -30,6 +30,7 @@ ALTER VIEW [vw_prx_death_tracker] AS
 	  THEN DATEPART(yy, date) +1
 	ELSE DATEPART(yy, date) 
   END [year_adjust]
+  
   -- AND CONSEQUENTLY NEED TO ADJUST AGE_JAN_1
   ,CASE
     WHEN (
@@ -43,6 +44,36 @@ ALTER VIEW [vw_prx_death_tracker] AS
 	  THEN age_jan1 +1
 	ELSE age_jan1
   END [age_adjust]
+  
+  
+  -- ASSUMES COHORTS OF DIFFERENT SIZE ARE APPROPRIATE
+, CASE
+WHEN yob BETWEEN 1895 AND 1906
+THEN 1895 
+WHEN yob BETWEEN 1907 AND 1918
+THEN 1907
+WHEN yob BETWEEN 1919 AND 1930
+THEN 1919
+WHEN yob BETWEEN 1931 AND 1945 -- LARGER COHORT
+THEN 1931
+WHEN yob BETWEEN 1946 AND 1957 
+THEN 1946
+WHEN yob BETWEEN 1958 AND 1969 
+THEN 1958
+WHEN yob BETWEEN 1970 AND 1981
+THEN 1970
+WHEN yob BETWEEN 1982 AND 1993
+THEN 1982
+WHEN yob BETWEEN 1994 AND 2005
+THEN 1994
+WHEN yob BETWEEN 2006 AND 2017
+THEN 2006
+ELSE NULL
+END [cohort]
+
+  
+  
+  
   ,CASE
    WHEN prox_to_death < 12
    THEN 1
@@ -54,71 +85,62 @@ ALTER VIEW [vw_prx_death_tracker] AS
    THEN 4
    WHEN prox_to_death > 47 AND prox_to_death < 60
    THEN 5
+   WHEN prox_to_death = 999999
+   THEN 999999
    ELSE NULL
    END [ttd]
 
 	  
 	FROM(
-	            	SELECT TOP (100) --[File]
+	            SELECT TOP (100) --[File]
                   deaths.[encrypted_hesid]
-	              ,CASE 
-	               WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
-	               -- HIERARCHY: DISDATE, EPIEND, EPISTART
-	               -- WHEN 1800 ETC. USE EPIEND THEN EPISTART
-	               THEN ISNULL((DATEDIFF(Y
-                                ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16') -- take dob to be mid month
-                                ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
-                                 ) / 365)
-	            				 ,(DATEDIFF(Y
-                                ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                                ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
-                                 ) / 365)
-	            				 )
-	               -- BUT PREDOMINANTLY USE DISDATE:
-	               ELSE ISNULL((DATEDIFF(Y
-                                         ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                                         ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.disdate))+ '-01-01')
-                                         ) / 365)
-	            			   , ISNULL((DATEDIFF(Y
-                                         ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                                         ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epiend))+ '-01-01')
-                                          ) / 365),
-	            						  (DATEDIFF(Y
-                                         ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
-                                         ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.epistart))+ '-01-01')
-                                          ) / 365)
 
-				            			)
-		                			) 
-	              END [age_jan1]
-	             ,ip.sex as [gender]
-	             ,ip.soal
-	             --,deaths.[DerivedAge] as [age_death]
-	             --,deaths.sex as [gender]
-	             --local authority
-	             ,CASE
-		            WHEN DATEPART(YY, ip.disdate) IN (1582, 1800, 1801)
-		            THEN ISNULL(ip.epiend, ip.epistart)
-		            ELSE ISNULL(ip.disdate, ISNULL(ip.epiend, ip.epistart)) 
-                 END [date]
-                 ,[DOD]
-				 , CASE
-        WHEN DATEDIFF(DD, ip.admidate, deaths.DOD) between 0 and 40000 
-        THEN CAST(
-          FLOOR(
-            DATEDIFF(DD, ip.admidate, deaths.DOD) /30.42 -- average days in a month
-                    ) AS INT
-               )
-        WHEN DATEDIFF(DD, ip.admidate, deaths.DOD) < 0
-        THEN 999999 -- Error code will be 999999
-        ELSE NULL 
-    END [prox_to_death]
+				  ,DATEDIFF(Y
+                           ,CONVERT(DATE, SUBSTRING(ip.mydob, 3, 4) + '-' + SUBSTRING(ip.mydob, 1, 2) + '-16')
+                           ,CONVERT(DATE, CONVERT(NVARCHAR(4), DATEPART(YY, ip.admidate))+ '-01-01')
+                            ) / 365
+  
+                AS [age_jan1]
+	             
+	            ,ip.sex as [gender]
+	            ,ip.soal -- need correct type and to join to la 
+	             
+	            ,CASE
+  					WHEN DATEPART(YY, ip.admidate) < 1990
+  					THEN ip.epistart
+  					ELSE ip.admidate 
+  				END [date]
+				  
+				,CAST(right(ip.mydob, 4) AS INT) AS [yob]
+
+                ,[DOD]
+	  			
+				,icd_chap.chapter AS [death_chapter]
+				
+				, CASE
+        			WHEN DATEDIFF(DD, ip.admidate, deaths.DOD) between 0 and 40000 
+        			THEN CAST(
+        			  FLOOR(
+        			    DATEDIFF(DD, ip.admidate, deaths.DOD) /30.41 -- average days in a month
+        			            ) AS INT
+        			       )
+        			WHEN DATEDIFF(DD, ip.admidate, deaths.DOD) < 0
+        			THEN 999999 -- Error code will be 999999
+        			ELSE NULL 
+   				END [prox_to_death]
+	  
+
 	
                  --,[DOR]
                  --,[RESSTHA]
                  --,[RESPCT]
          FROM [ONS].[HESONS].[tbMortalityto1617] deaths
   
+
+  LEFT JOIN StrategicWorking.dbo.aj_180613_icd10_chapter_fix icd_chap
+                                            ON deaths.CAUSE_OF_DEATH = icd_chap.diagnosis_code
+                                            
+
   -- JOIN TO ADMISSIONS UPTO 5 CALENDAR YEARS BACK(MIN YEAR WILL BE 0506 FOR 2006)
   -- FOR 2010 INVOLVES 1011, 0910, 0809, 0708, 0607, 0506 
   -- ie. COMPLETE 2010, 2009, 2008, 2007, 2006, 
@@ -191,41 +213,46 @@ ALTER VIEW [vw_prx_death_tracker] AS
 			   AND epiorder = 1
 			   AND admimeth LIKE '2%'
 			  
-			UNION ALL
+			--UNION ALL
 			  
-			SELECT [encrypted_hesid]
-			 		,[disdate]
-			 		,[epiend]
-			 		,[epistart]
-					,[sex]
-					,[soal]
-					,[mydob]
-					,[admidate]
-			FROM 
-			[HESDATA].[DBO].[tbinpatients0607]
-			WHERE 
-			   1 = 1 
-			   AND epiorder = 1
-			   AND admimeth LIKE '2%'
+			-- SELECT [encrypted_hesid]
+			--  		,[disdate]
+			--  		,[epiend]
+			--  		,[epistart]
+			-- 		,[sex]
+			-- 		,[soal]
+			-- 		,[mydob]
+			-- 		,[admidate]
+			-- FROM 
+			-- [HESDATA].[DBO].[tbinpatients0607]
+			-- WHERE 
+			--    1 = 1 
+			--    AND epiorder = 1
+			--    AND admimeth LIKE '2%'
 			
-			UNION ALL
+			-- UNION ALL
 			  
-			SELECT [encrypted_hesid]
-			 		,[disdate]
-			 		,[epiend]
-			 		,[epistart]
-					,[sex]
-					,[soal]
-					,[mydob]
-					,[admidate]
-			FROM 
-			[HESDATA].[DBO].[tbinpatients0506]
-			WHERE 
-			   1 = 1 
-			   AND epiorder = 1
-			   AND admimeth LIKE '2%'
+			-- SELECT [encrypted_hesid]
+			--  		,[disdate]
+			--  		,[epiend]
+			--  		,[epistart]
+			-- 		,[sex]
+			-- 		,[soal]
+			-- 		,[mydob]
+			-- 		,[admidate]
+			-- FROM 
+			-- [HESDATA].[DBO].[tbinpatients0506]
+			-- WHERE 
+			--    1 = 1 
+			--    AND epiorder = 1
+			--    AND admimeth LIKE '2%'
 
 			) ip
    ON deaths.encrypted_hesid = ip.encrypted_hesid
+   -- FOR DEATH IN CALENDAR YEAR:
    WHERE (DOD >= '2010-01-01' AND DOD < '2011-01-01')
 ) CTE1
+
+ WHERE CTE1.age_jan1 < 110
+   AND (CTE1.gender = 1 OR CTE1.gender = 2)
+   AND soal NOT LIKE 'W%'
