@@ -19,7 +19,9 @@
 
 SELECT *, -- CTE3 BEGINS
   [age_adjust] - ([year] - [year2]) AS [age_countbk]
+  ,[ttd] + ([year] - [year2]) AS [ttd_countback]
   -- NEED A TIME TO DEATH COUNTBACK?
+INTO [StrategicWorking].[DEFAULTS].[aj_180619_tracker_test]
 FROM (
 
 SELECT * -- CTE2 BEGINS
@@ -56,6 +58,8 @@ WHERE NOT EXISTS (
 								
 							WHERE (CTE3.year2 = orig1.year_adjust AND CTE3.encrypted_hesid = orig1.encrypted_hesid)
 						)
+AND [year_adjust] <> 2007
+
 ORDER BY [encrypted_hesid]
 
 			
