@@ -3,7 +3,7 @@ library(dbplyr)
 library(DBI)
 library(odbc)
 
-con <- dbConnect(odbc(), 
+con_sw <- dbConnect(odbc(), 
                  Driver = "SQL Server", 
                  Server = "MLCSU-BI-SQL-SU", 
                  Database = "StrategicWorking", 
@@ -61,13 +61,15 @@ tbdiagnoses <- tbdiagnoses %>%
 
 tbdiagnoses <- tbdiagnoses %>% 
   mutate(DiagnosisDescription = stringi::stri_trans_general(DiagnosisDescription, "latin-ascii")) %>% 
-  janitor::clean_names()
+  janitor::clean_names() %>% 
+  mutate(diagnosis_code = str_replace(diagnosis_code, "X$", ""))
+  
 
 # tbdiagnoses %>% slice(1128:1132) %>% View()
 # 
 # devtools::install_github("rstats-db/odbc@SQLTable")
 
-dbWriteTable(con, "aj_180613_icd10_chapter_fix", tbdiagnoses)
-
+dbWriteTable(con_sw, "aj_180619_icd10_chapter_fix", tbdiagnoses)
+dbExecute(con_sw, "drop table strategicworking.dbo.aj_180613_icd10_chapter_fix")
 # copy_to(con, test1, in_schema("DEFAULTS", "aj_180607_icd10_chap_fix"), temporary = F)
 
