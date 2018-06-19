@@ -92,7 +92,7 @@ END [cohort]
 
 	  
 	FROM(
-	            SELECT TOP (100) --[File]
+	            SELECT --TOP (100) 
                   deaths.[encrypted_hesid]
 
 				  ,DATEDIFF(Y
