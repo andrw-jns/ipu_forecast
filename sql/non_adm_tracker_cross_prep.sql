@@ -17,8 +17,15 @@
 
 
 
-SELECT *, -- CTE3 BEGINS
-  [age_adjust] - ([year] - [year2]) AS [age_countbk]
+SELECT DISTINCT [encrypted_hesid] -- CTE3 BEGINS
+   ,[age_adjust] - ([year] - [year2]) AS [age_countbk]
+   ,[gender]
+   ,[soal]
+   ,[DOD] as [dod]
+   ,[death_chapter]
+   ,[cohort]
+   ,[year]
+   ,[year2]
   ,[ttd] + ([year] - [year2]) AS [ttd_countback]
   -- NEED A TIME TO DEATH COUNTBACK?
 INTO [StrategicWorking].[DEFAULTS].[aj_180619_tracker_test]
