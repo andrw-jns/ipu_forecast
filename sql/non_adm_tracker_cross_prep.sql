@@ -1,5 +1,8 @@
 /****** CROSS PREP IS V2 OF NON_ADM_TRACKER  ******/
-
+-- SELECT *
+-- FROM [ONS].[HESONS].[tbMortalityto1617] 
+-- WHERE (DOD >= '2010-01-01' AND DOD < '2011-01-01')
+-- AND encrypted_hesid = '006199D8CC77FBD8A9EA020DBA8A70D8'
 -- Pick up: mask complexity (and replication) by creating a view (or table, or temp table)
 
 
@@ -15,7 +18,11 @@
 -- SELECT DISTINCT year2, encrypted_hesid, age_countbk, gender, soal
 -- FROM (
 
+SELECT *
 
+INTO [StrategicWorking].[DEFAULTS].[aj_180619_tracker_test]
+-- CTE 4 BEGINS
+FROM (
 
 SELECT DISTINCT [encrypted_hesid] -- CTE3 BEGINS
    ,[age_adjust] - ([year] - [year2]) AS [age_countbk]
@@ -26,9 +33,8 @@ SELECT DISTINCT [encrypted_hesid] -- CTE3 BEGINS
    ,[cohort]
    ,[year]
    ,[year2]
-  ,[ttd] + ([year] - [year2]) AS [ttd_countback]
+  ,[ttd] + ([year] - [year2]) AS [ttd_countbk]
   -- NEED A TIME TO DEATH COUNTBACK?
-INTO [StrategicWorking].[DEFAULTS].[aj_180619_tracker_test]
 FROM (
 
 SELECT * -- CTE2 BEGINS
@@ -67,6 +73,8 @@ WHERE NOT EXISTS (
 						)
 AND [year_adjust] <> 2007
 
-ORDER BY [encrypted_hesid]
 
+) CTE4
 			
+WHERE [ttd_countbk] < 3
+ORDER BY [encrypted_hesid]
